@@ -14,7 +14,7 @@ It generates actionable reports, provides mitigation guidance, and includes educ
 ## 🌐 Live Demo
 
 🎉 Try the tool instantly on Render:  
-👉 [https://security-scanner-vts4.onrender.com](https://security-scanner-vts4.onrender.com)
+👉 [https://security-scanner-vts4.onrender.com](https://security-scanner-yxjo.onrender.com/)
 
 ---
 
@@ -58,7 +58,7 @@ It generates actionable reports, provides mitigation guidance, and includes educ
 ### 👥 About Page
 ![About](https://github.com/user-attachments/assets/03482c1f-5cc4-4e52-b827-971d7b84dfb1)
 
-> ⚠️ *Note: Screenshots are just visual previews. For full functionality, try the [live demo](https://security-scanner-vts4.onrender.com) or run locally.*
+> ⚠️ *Note: Screenshots are just visual previews. For full functionality, try the [live demo](https://security-scanner-yxjo.onrender.com/) or run locally.*
 
 ---
 
