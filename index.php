@@ -227,10 +227,10 @@ require_once 'includes/header.php';
             <form method="post" action="index.php">
                 <label for="action">Select Scan:</label>
                 <select id="action" name="action">
+		    <option value="full_scan">Full Scan</option>
                     <option value="port_scan">Port Scan</option>
                     <option value="wayback_sql_injection">SQL Injection</option>
                     <option value="check_xss">XSS</option>
-                    <option value="full_scan">Full Scan</option>
                     <option value="code_review">Code Review (PHP)</option>
                 </select>
 
