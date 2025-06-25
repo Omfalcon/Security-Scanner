@@ -4,9 +4,9 @@ require_once 'includes/functions.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $action = $_POST['action'];
-    $host = filter_var($_POST['host'], FILTER_SANITIZE_STRING);
-    $domain = filter_var($_POST['domain'], FILTER_SANITIZE_URL);
-    $xss = filter_var($_POST['xss'], FILTER_SANITIZE_URL);
+    $host = htmlspecialchars(trim($_POST['host']));
+    $domain = htmlspecialchars(trim($_POST['domain']));
+    $xss = htmlspecialchars(trim($_POST['xss']));
 
     if ($action === 'port_scan') {
         $timestamp = time();
