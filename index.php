@@ -19,14 +19,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <p>Target: $host </p>
         <p>Purpose: Assess the network's attack surface by identifying open ports and exposed services. </p>
         <p>Key Findings: </p>";
-
+        
         $portsToScan = array_keys($GLOBALS['serviceMap']);
         $openPorts = scanPorts($host, $portsToScan);
 
         foreach ($openPorts as $portInfo) {
             $output .= "Port " . $portInfo['port'] . " with potential vulnerabilities<br>";
         }
-
+        
         $output .= "
         <br>
         <h2>2. Vulnerabilities and Remediation</h2>
@@ -103,7 +103,7 @@ Conduct a full vulnerability assessment, including web applications and database
 Develop a patch management strategy to keep all services updated.
 Train staff on security best practices and hardening techniques.
         </p>";
-
+        
     } elseif ($action === 'wayback_sql_injection') {
         $output = "<h2>Actionable Report: SQL Injection Vulnerability</h2>
         <h2>1. Vulnerability Overview </h2>
