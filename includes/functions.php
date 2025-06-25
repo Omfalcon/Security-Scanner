@@ -192,7 +192,7 @@ function checkXSS($domain) {
     <h2>Recommendations:</h2>
     <h3>1. Input Sanitization:</h3>
     <p>
-    - Sanitize all user input fields to ensure malicious scripts are not accepted. Use functions to remove or escape special characters (like `<`, `>`, `\"`, `&`, etc.).
+    - Sanitize all user input fields to ensure malicious scripts are not accepted. Use functions to remove or escape special characters (like <, >, \", &, etc.).
     </p>
     <br><br>
     <h2>2. Output Encoding:</h2>
@@ -222,5 +222,35 @@ function checkXSS($domain) {
     ";
     
     return $output;
+}
+
+function runFullScan($host, $domain, $xss) {
+    global $serviceMap;
+    $report = "<h1>Full Security Scan Report</h1>";
+    $report .= "<h2>1. Port Scan Results</h2>";
+    $portsToScan = array_keys($serviceMap);
+    $openPorts = scanPorts($host, $portsToScan);
+    $report .= "<ul>";
+    foreach ($openPorts as $portInfo) {
+        $report .= "<li>Port " . $portInfo['port'] . " (" . $portInfo['service'] . ") is open.</li>";
+    }
+    $report .= "</ul>";
+    $report .= "<h2>2. SQL Injection Scan Results</h2>";
+    $waybackUrls = getWaybackUrls($domain);
+    if (is_string($waybackUrls)) {
+        $report .= $waybackUrls;
+    } else {
+        foreach ($waybackUrls as $waybackUrl) {
+            $params = extractQueryParameters($waybackUrl);
+            if (!empty($params)) {
+                foreach ($params as $param) {
+                    $report .= checkSQLInjection($waybackUrl, $param);
+                }
+            }
+        }
+    }
+    $report .= "<h2>3. XSS Scan Results</h2>";
+    $report .= checkXSS($xss);
+    return $report;
 }
 ?>
