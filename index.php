@@ -1,12 +1,23 @@
 <?php
 ob_start();
+set_time_limit(0);
+ini_set('memory_limit', '-1');
+ini_set('max_execution_time', 0);
+ignore_user_abort(true);
 require_once 'includes/functions.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $action = $_POST['action'];
+
+if ($action === 'full_scan') {
+    $universal = htmlspecialchars(trim($_POST['universal_domain']));
+    $host = $domain = $xss = $universal;
+} else {
     $host = htmlspecialchars(trim($_POST['host']));
     $domain = htmlspecialchars(trim($_POST['domain']));
     $xss = htmlspecialchars(trim($_POST['xss']));
+}
+
 
     if ($action === 'port_scan') {
         $timestamp = time();
@@ -155,65 +166,54 @@ Train staff on security best practices and hardening techniques.
         }
     } elseif ($action === 'check_xss') {
         $output = checkXSS($xss);
-    }     elseif ($action === 'code_review') {
-        $language = $_POST['language'] ?? 'php';
-        $code = $_POST['code'] ?? '';
-        $lines = explode("\n", $code);
-        $output = "<h2>🚨 Rule-Based Code Review Report (" . strtoupper($language) . ")</h2><pre style='white-space: pre-wrap;'>";
-
-        $rules = [];
-        if ($language === 'php') {
-            $rules = [
-                'eval' => ['High', 'Avoid using eval(); consider alternatives like include/switch.', 'https://owasp.org/www-community/attacks/Code_Injection'],
-                'exec' => ['High', 'Avoid exec(); may allow command execution.', 'https://owasp.org/www-community/attacks/Command_Injection'],
-                'shell_exec' => ['High', 'Avoid shell_exec(); exposes system to attackers.', 'https://owasp.org/www-community/attacks/Command_Injection'],
-                'system' => ['High', 'Avoid system(); risk of OS command injection.', 'https://owasp.org/www-community/attacks/Command_Injection'],
-                'passthru' => ['High', 'Avoid passthru(); executes system commands directly.', 'https://owasp.org/www-community/attacks/Command_Injection'],
-                'mysqli_query' => ['Medium', 'Use prepared statements instead of raw queries.', 'https://owasp.org/www-community/attacks/SQL_Injection'],
-                'mysql_query' => ['High', 'Outdated function; use mysqli or PDO with parameter binding.', 'https://owasp.org/www-community/attacks/SQL_Injection'],
-                '$_GET' => ['Medium', 'Sanitize user input using filter_input() or htmlspecialchars().', 'https://owasp.org/www-community/attacks/Input_Validation'],
-                '$_POST' => ['Medium', 'Validate and sanitize all POST data to avoid injection.', 'https://owasp.org/www-community/attacks/Input_Validation'],
-            ];
-        } elseif ($language === 'javascript') {
-            $rules = [
-                'eval' => ['High', 'Avoid eval(); use JSON.parse or Function instead.', 'https://owasp.org/www-community/attacks/eval_javascript'],
-                'innerHTML' => ['High', 'Avoid innerHTML; use DOM sanitizers or textContent.', 'https://owasp.org/www-community/attacks/xss'],
-                'document.write' => ['High', 'Avoid document.write(); considered unsafe and outdated.', 'https://developer.mozilla.org/en-US/docs/Web/API/Document/write'],
-                'setTimeout' => ['Medium', 'Avoid string as argument to setTimeout(); use anonymous function.', 'https://developer.mozilla.org/en-US/docs/Web/API/setTimeout'],
-                'localStorage' => ['Medium', 'Do not store sensitive data like tokens in localStorage.', 'https://owasp.org/www-community/attacks/xss'],
-            ];
-        }
-
-        $flagCount = 0;
-        $severityCount = ['High' => 0, 'Medium' => 0, 'Low' => 0];
-
-        foreach ($lines as $num => $line) {
-            $lineNumber = $num + 1;
-            $lineOut = htmlspecialchars($line);
-
-            foreach ($rules as $keyword => [$severity, $advice, $link]) {
-                if (stripos($line, $keyword) !== false) {
-                    $output .= "<strong>⚠️ Line $lineNumber [$severity]</strong>: <code>$lineOut</code>\n👉 $advice <a href='$link' target='_blank'>[Learn more]</a>\n\n";
-                    $flagCount++;
-                    $severityCount[$severity]++;
-                    break;
-                }
+    } 
+    elseif ($action === 'code_review') {
+    $language = $_POST['language'] ?? 'php';
+    $code = $_POST['code'] ?? '';
+    $lines = explode("\n", $code);
+    $output = "<h2>🚨 Rule-Based Code Review Report (" . strtoupper($language) . ")</h2><pre>";
+    $rules = [];
+    if ($language === 'php') {
+        $rules = [
+            'eval' => 'Avoid using eval(); consider alternatives like include/switch.',
+            'exec' => 'Avoid exec(); may allow command execution.',
+            'shell_exec' => 'Avoid shell_exec(); exposes system to attackers.',
+            'system' => 'Avoid system(); risk of OS command injection.',
+            'passthru' => 'Avoid passthru(); executes system commands directly.',
+            'mysqli_query' => 'Use prepared statements instead of raw queries.',
+            'mysql_query' => 'Outdated function; use mysqli or PDO with parameter binding.',
+            '$_GET' => 'Sanitize user input using filter_input() or htmlspecialchars().',
+            '$_POST' => 'Validate and sanitize all POST data to avoid injection.',
+        ];
+    } elseif ($language === 'javascript') {
+        $rules = [
+            'eval' => 'Avoid eval(); use JSON.parse or Function instead.',
+            'innerHTML' => 'Avoid direct innerHTML; use DOM sanitizers or textContent.',
+            'document.write' => 'Avoid document.write(); considered unsafe and outdated.',
+            'setTimeout' => 'Avoid string as argument to setTimeout(); use anonymous function.',
+            'localStorage' => 'Do not store sensitive data like tokens in localStorage.',
+        ];
+    }
+    $flagCount = 0;
+    foreach ($lines as $num => $line) {
+        $lineNumber = $num + 1;
+        $lineOut = htmlspecialchars($line);
+        foreach ($rules as $pattern => $advice) {
+            if (stripos($line, $pattern) !== false) {
+                $output .= "⚠ <strong>Line $lineNumber:</strong> <code>$lineOut</code>\n👉 $advice\n\n";
+                $flagCount++;
+                break;
             }
         }
-
-        if ($flagCount === 0) {
-            $output .= "✅ No security issues detected in the provided code.";
-        } else {
-            $output .= "\n🔍 Summary:\n";
-            $output .= "- Total Lines Scanned: " . count($lines) . "\n";
-            $output .= "- Issues Found: $flagCount\n";
-            $output .= "- High Severity: {$severityCount['High']}\n";
-            $output .= "- Medium Severity: {$severityCount['Medium']}\n";
-        }
-
-        $output .= "</pre>";
+    }
+    if ($flagCount === 0) {
+        $output .= "✅ No security issues detected in the provided code.";
     }
 
+    $output .= "</pre>";
+} elseif ($action === 'full_scan') {
+    $output = runFullScan($host, $domain, $xss);
+}
 
 }
 
@@ -230,6 +230,7 @@ require_once 'includes/header.php';
                     <option value="port_scan">Port Scan</option>
                     <option value="wayback_sql_injection">SQL Injection</option>
                     <option value="check_xss">XSS</option>
+                    <option value="full_scan">Full Scan</option>
                     <option value="code_review">Code Review (PHP)</option>
                 </select>
 
@@ -247,6 +248,14 @@ require_once 'includes/header.php';
                     <label for="xss">Domain (for XSS Injection):</label>
                     <input type="text" id="xss" name="xss">
                 </div>
+				
+				<div class="in" id="universalInput" style="display: none;">
+					<label for="universal_domain">Domain (for Full Scan):</label>
+					<input type="text" id="universal_domain" name="universal_domain">
+				</div>
+
+				
+
                 <div class="in" id="codeInput" style="display: none;">
                     <label for="code">Paste Code:</label>
                     <textarea id="code" name="code" rows="10" style="width:100%;"></textarea>
@@ -255,26 +264,22 @@ require_once 'includes/header.php';
                     <select id="language" name="language">
                         <option value="php">PHP</option>
                         <option value="javascript">JavaScript</option>
-                        <!-- add more as needed -->
                     </select>
                 </div>
 
                 <input class="submit" type="submit" value="Submit">
             </form>
         </div>
+
         <tooltip>
             <span id="tooltip1">TOOLTIP : A port scanner is a tool used to probe a computer or network for open
-                ports. Open ports are communication endpoints that accept data, which can indicate running services
-                or applications. </span>
-            <span id="tooltip2">TOOLTIP : SQL Injection is a security vulnerability where an attacker can manipulate
-                SQL queries by inserting malicious code through untrusted input. This can lead to unauthorized
-                access or manipulation of a database. </span>
-            <span id="tooltip3">TOOLTIP : An XSS (Cross-Site Scripting) attack lets an attacker inject malicious
-                scripts into a website, which then execute in victims' browsers. This can steal sensitive
-                information like cookies or session tokens. </span>
+                ports...</span>
+            <span id="tooltip2">TOOLTIP : SQL Injection is a security vulnerability...</span>
+            <span id="tooltip3">TOOLTIP : An XSS (Cross-Site Scripting) attack...</span>
         </tooltip>
         <div class="credit">$-$quare $ecurity</div>
     </div>
+
     <div class="card outputcard">
         <h2>Report</h2>
         <div class="outputbox" id="outputbox">
@@ -290,17 +295,20 @@ require_once 'includes/header.php';
         <button id="download-pdf">Download PDF</button>
     </div>
 </main>
+
 <script>
 document.getElementById('action').addEventListener('change', function () {
     const hostInput = document.getElementById('hostInput');
     const domainInput = document.getElementById('domainInput');
     const xssInput = document.getElementById('xssInput');
     const codeInput = document.getElementById('codeInput');
+    const universalInput = document.getElementById('universalInput');
 
     hostInput.style.display = 'none';
     domainInput.style.display = 'none';
     xssInput.style.display = 'none';
     codeInput.style.display = 'none';
+    universalInput.style.display = 'none';
 
     const selected = this.value;
 
@@ -310,11 +318,16 @@ document.getElementById('action').addEventListener('change', function () {
         domainInput.style.display = 'block';
     } else if (selected === 'check_xss') {
         xssInput.style.display = 'block';
+    } else if (selected === 'full_scan') {
+        universalInput.style.display = 'block';
     } else if (selected === 'code_review') {
         codeInput.style.display = 'block';
     }
 });
+
+
 </script>
+
 
 
 <?php
